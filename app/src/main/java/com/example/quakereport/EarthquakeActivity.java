@@ -2,14 +2,18 @@ package com.example.quakereport;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.example.android.quakereport.QueryUtils;
 
@@ -19,8 +23,6 @@ import java.util.List;
 public class EarthquakeActivity extends AppCompatActivity {
 
 
-    private static final String LOG_TAG = QueryUtils.class.getSimpleName();
-    /** URL for earthquake data from the USGS dataset */
     private static final String USGS_REQUEST_URL =
             "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time&minmag=5&limit=10";
 
@@ -28,18 +30,16 @@ public class EarthquakeActivity extends AppCompatActivity {
 
     private EarthquakeAdapter mAdapter;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
 
-        // Find a reference to the {@link ListView} in the layout
         ListView earthquakeListView = (ListView) findViewById(R.id.list);
 
-//        ArrayList<>
-//        EarthquakeAsyncTask task = new EarthquakeAsyncTask();
-//        task.execute(USGS_REQUEST_URL);
+
 
         List<Earthquake> toCheck = new ArrayList<>();
 
@@ -56,15 +56,21 @@ public class EarthquakeActivity extends AppCompatActivity {
                 startActivity(website);
             }
         });
+        TextView emptyTextView = findViewById(R.id.empty_view);
+        earthquakeListView.setEmptyView(emptyTextView);
+
+        ConnectivityManager connectivityManager =  (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkState =  connectivityManager.getActiveNetworkInfo();
+
+        if (networkState!=null && networkState.isConnected()){
         EarthquakeAsyncTask task = new EarthquakeAsyncTask();
-        task.execute(USGS_REQUEST_URL);
-
-
-
-        // Set the adapter on the {@link ListView}
-        // so the list can be populated in the user interface
-
-
+        task.execute(USGS_REQUEST_URL,newUrl);
+        }
+        else {
+            ProgressBar progressBar = findViewById(R.id.progressBar);
+            progressBar.setVisibility(View.GONE);
+            emptyTextView.setText("No Internet Connection");
+        }
 
     }
 
@@ -79,15 +85,22 @@ public class EarthquakeActivity extends AppCompatActivity {
            }
 
            List<Earthquake> result = QueryUtils.fetchEarthquakeData(urls[0]);
-           return result;
+           List<Earthquake> result1 = QueryUtils.fetchEarthquakeData(urls[1]);
+           result.addAll(result1);
+
+            return result;
         }
         @Override
         protected void onPostExecute(List<Earthquake> data) {
-            // Clear the adapter of previous earthquake data
+
+            ProgressBar progressBar = findViewById(R.id.progressBar);
+            progressBar.setVisibility(View.GONE);
+            TextView emptyTextView = findViewById(R.id.empty_view);
+                String whenEmpty = " No Earthquake Data Found";
+                emptyTextView.setText(whenEmpty);
+
             mAdapter.clear();
 
-            // If there is a valid list of {@link Earthquake}s, then add them to the adapter's
-            // data set. This will trigger the ListView to update.
             if (data != null && !data.isEmpty()) {
                 mAdapter.addAll(data);
             }

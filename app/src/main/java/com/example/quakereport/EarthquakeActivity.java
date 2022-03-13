@@ -62,6 +62,8 @@ public class EarthquakeActivity extends AppCompatActivity {
         ConnectivityManager connectivityManager =  (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkState =  connectivityManager.getActiveNetworkInfo();
 
+//        check networkState should not be null, if then it will be a null pointer exception and app will crashes
+
         if (networkState!=null && networkState.isConnected()){
         EarthquakeAsyncTask task = new EarthquakeAsyncTask();
         task.execute(USGS_REQUEST_URL,newUrl);
